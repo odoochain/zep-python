@@ -7,22 +7,15 @@ from ..core.datetime_utils import serialize_datetime
 from ..core.pydantic_utilities import deep_union_pydantic_dicts, pydantic_v1
 
 
-class Fact(pydantic_v1.BaseModel):
-    content: str
-    created_at: str
-    expired_at: typing.Optional[str] = None
-    fact: str = pydantic_v1.Field()
-    """
-    Deprecated. This field will be removed in the future, please use `content` instead.
-    """
-
-    invalid_at: typing.Optional[str] = None
-    name: typing.Optional[str] = None
-    rating: typing.Optional[float] = None
-    source_node_name: typing.Optional[str] = None
-    target_node_name: typing.Optional[str] = None
-    uuid_: str = pydantic_v1.Field(alias="uuid")
-    valid_at: typing.Optional[str] = None
+class ApidataDocument(pydantic_v1.BaseModel):
+    content: typing.Optional[str] = None
+    created_at: typing.Optional[str] = None
+    document_id: typing.Optional[str] = None
+    embedding: typing.Optional[typing.List[float]] = None
+    is_embedded: typing.Optional[bool] = None
+    metadata: typing.Optional[typing.Dict[str, typing.Any]] = None
+    updated_at: typing.Optional[str] = None
+    uuid_: typing.Optional[str] = pydantic_v1.Field(alias="uuid", default=None)
 
     def json(self, **kwargs: typing.Any) -> str:
         kwargs_with_defaults: typing.Any = {"by_alias": True, "exclude_unset": True, **kwargs}

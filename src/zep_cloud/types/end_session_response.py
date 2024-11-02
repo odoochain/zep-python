@@ -5,12 +5,12 @@ import typing
 
 from ..core.datetime_utils import serialize_datetime
 from ..core.pydantic_utilities import deep_union_pydantic_dicts, pydantic_v1
-from .classify_session_response import ClassifySessionResponse
 from .session import Session
+from .session_classification import SessionClassification
 
 
 class EndSessionResponse(pydantic_v1.BaseModel):
-    classification: typing.Optional[ClassifySessionResponse] = None
+    classification: typing.Optional[SessionClassification] = None
     session: typing.Optional[Session] = None
 
     def json(self, **kwargs: typing.Any) -> str:

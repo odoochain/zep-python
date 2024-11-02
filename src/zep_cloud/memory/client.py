@@ -12,10 +12,8 @@ from ..errors.bad_request_error import BadRequestError
 from ..errors.conflict_error import ConflictError
 from ..errors.internal_server_error import InternalServerError
 from ..errors.not_found_error import NotFoundError
-from ..types.added_fact import AddedFact
 from ..types.api_error import ApiError as types_api_error_ApiError
 from ..types.classify_session_request import ClassifySessionRequest
-from ..types.classify_session_response import ClassifySessionResponse
 from ..types.end_session_response import EndSessionResponse
 from ..types.end_sessions_response import EndSessionsResponse
 from ..types.fact_rating_instruction import FactRatingInstruction
@@ -23,13 +21,14 @@ from ..types.fact_response import FactResponse
 from ..types.facts_response import FactsResponse
 from ..types.memory import Memory
 from ..types.memory_search_result import MemorySearchResult
-from ..types.memory_type import MemoryType
 from ..types.message import Message
 from ..types.message_list_response import MessageListResponse
+from ..types.new_fact import NewFact
 from ..types.question import Question
 from ..types.search_scope import SearchScope
 from ..types.search_type import SearchType
 from ..types.session import Session
+from ..types.session_classification import SessionClassification
 from ..types.session_list_response import SessionListResponse
 from ..types.session_search_response import SessionSearchResponse
 from ..types.success_response import SuccessResponse
@@ -88,7 +87,9 @@ class MemoryClient:
             raise core_api_error_ApiError(status_code=_response.status_code, body=_response.text)
         raise core_api_error_ApiError(status_code=_response.status_code, body=_response_json)
 
-    def delete_fact(self, fact_uuid: str, *, request_options: typing.Optional[RequestOptions] = None) -> str:
+    def delete_fact(
+        self, fact_uuid: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> SuccessResponse:
         """
         delete a fact
 
@@ -102,7 +103,7 @@ class MemoryClient:
 
         Returns
         -------
-        str
+        SuccessResponse
             Deleted
 
         Examples
@@ -120,7 +121,7 @@ class MemoryClient:
             f"facts/{jsonable_encoder(fact_uuid)}", method="DELETE", request_options=request_options
         )
         if 200 <= _response.status_code < 300:
-            return pydantic_v1.parse_obj_as(str, _response.json())  # type: ignore
+            return pydantic_v1.parse_obj_as(SuccessResponse, _response.json())  # type: ignore
         if _response.status_code == 404:
             raise NotFoundError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
         if _response.status_code == 500:
@@ -137,9 +138,9 @@ class MemoryClient:
         self,
         *,
         session_id: str,
+        user_id: str,
         fact_rating_instruction: typing.Optional[FactRatingInstruction] = OMIT,
         metadata: typing.Optional[typing.Dict[str, typing.Any]] = OMIT,
-        user_id: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Session:
         """
@@ -150,14 +151,14 @@ class MemoryClient:
         session_id : str
             The unique identifier of the session.
 
+        user_id : str
+            The unique identifier of the user associated with the session
+
         fact_rating_instruction : typing.Optional[FactRatingInstruction]
             Optional instruction to use for fact rating.
 
         metadata : typing.Optional[typing.Dict[str, typing.Any]]
             The metadata associated with the session.
-
-        user_id : typing.Optional[str]
-            The unique identifier of the user associated with the session
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -176,6 +177,7 @@ class MemoryClient:
         )
         client.memory.add_session(
             session_id="session_id",
+            user_id="user_id",
         )
         """
         _response = self._client_wrapper.httpx_client.request(
@@ -275,7 +277,7 @@ class MemoryClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> EndSessionsResponse:
         """
-        End multiple sessions by their IDs
+        End multiple sessions by their IDs.
 
         Parameters
         ----------
@@ -328,6 +330,7 @@ class MemoryClient:
     def search_sessions(
         self,
         *,
+        text: str,
         limit: typing.Optional[int] = None,
         min_fact_rating: typing.Optional[float] = OMIT,
         min_score: typing.Optional[float] = OMIT,
@@ -336,7 +339,6 @@ class MemoryClient:
         search_scope: typing.Optional[SearchScope] = OMIT,
         search_type: typing.Optional[SearchType] = OMIT,
         session_ids: typing.Optional[typing.Sequence[str]] = OMIT,
-        text: typing.Optional[str] = OMIT,
         user_id: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> SessionSearchResponse:
@@ -345,28 +347,35 @@ class MemoryClient:
 
         Parameters
         ----------
+        text : str
+            The search text.
+
         limit : typing.Optional[int]
             The maximum number of search results to return. Defaults to None (no limit).
 
         min_fact_rating : typing.Optional[float]
+            The minimum fact rating to filter on. Only supported on cloud. Will be ignored on Community Edition.
 
         min_score : typing.Optional[float]
+            The minimum score for search results. Only supported on cloud. Will be ignored on Community Edition.
 
         mmr_lambda : typing.Optional[float]
+            The lambda parameter for the MMR Reranking Algorithm. Only supported on cloud. Will be ignored on Community Edition.
 
         record_filter : typing.Optional[typing.Dict[str, typing.Any]]
-            filter on the metadata
+            Record filter on the metadata. Only supported on cloud. Will be ignored on Community Edition.
 
         search_scope : typing.Optional[SearchScope]
+            Search scope. Only supported on cloud. On Community Edition the search scope is always "facts".
 
         search_type : typing.Optional[SearchType]
+            Search type. Only supported on cloud. Will be ignored on Community Edition.
 
         session_ids : typing.Optional[typing.Sequence[str]]
             the session ids to search
 
-        text : typing.Optional[str]
-
         user_id : typing.Optional[str]
+            User ID used to determine which sessions to search. Required on Community Edition.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -383,7 +392,9 @@ class MemoryClient:
         client = Zep(
             api_key="YOUR_API_KEY",
         )
-        client.memory.search_sessions()
+        client.memory.search_sessions(
+            text="text",
+        )
         """
         _response = self._client_wrapper.httpx_client.request(
             "sessions/search",
@@ -500,7 +511,7 @@ class MemoryClient:
         )
         client.memory.update_session(
             session_id="sessionId",
-            metadata={},
+            metadata={"key": "value"},
         )
         """
         _response = self._client_wrapper.httpx_client.request(
@@ -538,9 +549,9 @@ class MemoryClient:
         last_n: typing.Optional[int] = OMIT,
         persist: typing.Optional[bool] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
-    ) -> ClassifySessionResponse:
+    ) -> SessionClassification:
         """
-        classify a session by session id
+        classify a session by session id.
 
         Parameters
         ----------
@@ -567,7 +578,7 @@ class MemoryClient:
 
         Returns
         -------
-        ClassifySessionResponse
+        SessionClassification
             A response object containing the name and classification result.
 
         Examples
@@ -591,7 +602,7 @@ class MemoryClient:
             omit=OMIT,
         )
         if 200 <= _response.status_code < 300:
-            return pydantic_v1.parse_obj_as(ClassifySessionResponse, _response.json())  # type: ignore
+            return pydantic_v1.parse_obj_as(SessionClassification, _response.json())  # type: ignore
         if _response.status_code == 404:
             raise NotFoundError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
         if _response.status_code == 500:
@@ -613,7 +624,7 @@ class MemoryClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> EndSessionResponse:
         """
-        End a session by ID
+        End a session by ID.
 
         Parameters
         ----------
@@ -762,7 +773,7 @@ class MemoryClient:
             Session ID
 
         min_rating : typing.Optional[float]
-            Minimum rating by which to filter facts
+            Minimum rating by which to filter facts (Zep Cloud only)
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -807,7 +818,7 @@ class MemoryClient:
         self,
         session_id: str,
         *,
-        facts: typing.Optional[typing.Sequence[AddedFact]] = OMIT,
+        facts: typing.Optional[typing.Sequence[NewFact]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> SuccessResponse:
         """
@@ -818,7 +829,7 @@ class MemoryClient:
         session_id : str
             Session ID
 
-        facts : typing.Optional[typing.Sequence[AddedFact]]
+        facts : typing.Optional[typing.Sequence[NewFact]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -864,21 +875,17 @@ class MemoryClient:
         self,
         session_id: str,
         *,
-        memory_type: typing.Optional[MemoryType] = None,
         lastn: typing.Optional[int] = None,
         min_rating: typing.Optional[float] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Memory:
         """
-        Returns a memory (latest summary, list of messages and facts for models.MemoryTypePerpetual) for a given session
+        Returns a memory (latest summary, list of messages and facts) for a given session
 
         Parameters
         ----------
         session_id : str
             The ID of the session for which to retrieve memory.
-
-        memory_type : typing.Optional[MemoryType]
-            The type of memory to retrieve: perpetual, summary_retriever, or message_window. Defaults to perpetual.
 
         lastn : typing.Optional[int]
             The number of most recent memory entries to retrieve.
@@ -908,7 +915,7 @@ class MemoryClient:
         _response = self._client_wrapper.httpx_client.request(
             f"sessions/{jsonable_encoder(session_id)}/memory",
             method="GET",
-            params={"memoryType": memory_type, "lastn": lastn, "minRating": min_rating},
+            params={"lastn": lastn, "minRating": min_rating},
             request_options=request_options,
         )
         if 200 <= _response.status_code < 300:
@@ -946,10 +953,10 @@ class MemoryClient:
             A list of message objects, where each message contains a role and content.
 
         fact_instruction : typing.Optional[str]
-            Additional instruction for generating the facts.
+            Additional instruction for generating the facts. Zep Cloud Only, will be ignored on Community Edition.
 
         summary_instruction : typing.Optional[str]
-            Additional instruction for generating the summary.
+            Additional instruction for generating the summary. Zep Cloud Only, will be ignored on Community Edition.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -969,7 +976,12 @@ class MemoryClient:
         )
         client.memory.add(
             session_id="sessionId",
-            messages=[Message()],
+            messages=[
+                Message(
+                    content="content",
+                    role_type="norole",
+                )
+            ],
         )
         """
         _response = self._client_wrapper.httpx_client.request(
@@ -1194,7 +1206,7 @@ class MemoryClient:
         client.memory.update_message_metadata(
             session_id="sessionId",
             message_uuid="messageUUID",
-            metadata={},
+            metadata={"key": "value"},
         )
         """
         _response = self._client_wrapper.httpx_client.request(
@@ -1233,7 +1245,7 @@ class MemoryClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> typing.List[MemorySearchResult]:
         """
-        Search memory for the specified session.
+        Search memory for the specified session. Deprecated, please use search_sessions method instead
 
         Parameters
         ----------
@@ -1463,7 +1475,9 @@ class AsyncMemoryClient:
             raise core_api_error_ApiError(status_code=_response.status_code, body=_response.text)
         raise core_api_error_ApiError(status_code=_response.status_code, body=_response_json)
 
-    async def delete_fact(self, fact_uuid: str, *, request_options: typing.Optional[RequestOptions] = None) -> str:
+    async def delete_fact(
+        self, fact_uuid: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> SuccessResponse:
         """
         delete a fact
 
@@ -1477,7 +1491,7 @@ class AsyncMemoryClient:
 
         Returns
         -------
-        str
+        SuccessResponse
             Deleted
 
         Examples
@@ -1495,7 +1509,7 @@ class AsyncMemoryClient:
             f"facts/{jsonable_encoder(fact_uuid)}", method="DELETE", request_options=request_options
         )
         if 200 <= _response.status_code < 300:
-            return pydantic_v1.parse_obj_as(str, _response.json())  # type: ignore
+            return pydantic_v1.parse_obj_as(SuccessResponse, _response.json())  # type: ignore
         if _response.status_code == 404:
             raise NotFoundError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
         if _response.status_code == 500:
@@ -1512,9 +1526,9 @@ class AsyncMemoryClient:
         self,
         *,
         session_id: str,
+        user_id: str,
         fact_rating_instruction: typing.Optional[FactRatingInstruction] = OMIT,
         metadata: typing.Optional[typing.Dict[str, typing.Any]] = OMIT,
-        user_id: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Session:
         """
@@ -1525,14 +1539,14 @@ class AsyncMemoryClient:
         session_id : str
             The unique identifier of the session.
 
+        user_id : str
+            The unique identifier of the user associated with the session
+
         fact_rating_instruction : typing.Optional[FactRatingInstruction]
             Optional instruction to use for fact rating.
 
         metadata : typing.Optional[typing.Dict[str, typing.Any]]
             The metadata associated with the session.
-
-        user_id : typing.Optional[str]
-            The unique identifier of the user associated with the session
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1551,6 +1565,7 @@ class AsyncMemoryClient:
         )
         await client.memory.add_session(
             session_id="session_id",
+            user_id="user_id",
         )
         """
         _response = await self._client_wrapper.httpx_client.request(
@@ -1650,7 +1665,7 @@ class AsyncMemoryClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> EndSessionsResponse:
         """
-        End multiple sessions by their IDs
+        End multiple sessions by their IDs.
 
         Parameters
         ----------
@@ -1703,6 +1718,7 @@ class AsyncMemoryClient:
     async def search_sessions(
         self,
         *,
+        text: str,
         limit: typing.Optional[int] = None,
         min_fact_rating: typing.Optional[float] = OMIT,
         min_score: typing.Optional[float] = OMIT,
@@ -1711,7 +1727,6 @@ class AsyncMemoryClient:
         search_scope: typing.Optional[SearchScope] = OMIT,
         search_type: typing.Optional[SearchType] = OMIT,
         session_ids: typing.Optional[typing.Sequence[str]] = OMIT,
-        text: typing.Optional[str] = OMIT,
         user_id: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> SessionSearchResponse:
@@ -1720,28 +1735,35 @@ class AsyncMemoryClient:
 
         Parameters
         ----------
+        text : str
+            The search text.
+
         limit : typing.Optional[int]
             The maximum number of search results to return. Defaults to None (no limit).
 
         min_fact_rating : typing.Optional[float]
+            The minimum fact rating to filter on. Only supported on cloud. Will be ignored on Community Edition.
 
         min_score : typing.Optional[float]
+            The minimum score for search results. Only supported on cloud. Will be ignored on Community Edition.
 
         mmr_lambda : typing.Optional[float]
+            The lambda parameter for the MMR Reranking Algorithm. Only supported on cloud. Will be ignored on Community Edition.
 
         record_filter : typing.Optional[typing.Dict[str, typing.Any]]
-            filter on the metadata
+            Record filter on the metadata. Only supported on cloud. Will be ignored on Community Edition.
 
         search_scope : typing.Optional[SearchScope]
+            Search scope. Only supported on cloud. On Community Edition the search scope is always "facts".
 
         search_type : typing.Optional[SearchType]
+            Search type. Only supported on cloud. Will be ignored on Community Edition.
 
         session_ids : typing.Optional[typing.Sequence[str]]
             the session ids to search
 
-        text : typing.Optional[str]
-
         user_id : typing.Optional[str]
+            User ID used to determine which sessions to search. Required on Community Edition.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1758,7 +1780,9 @@ class AsyncMemoryClient:
         client = AsyncZep(
             api_key="YOUR_API_KEY",
         )
-        await client.memory.search_sessions()
+        await client.memory.search_sessions(
+            text="text",
+        )
         """
         _response = await self._client_wrapper.httpx_client.request(
             "sessions/search",
@@ -1875,7 +1899,7 @@ class AsyncMemoryClient:
         )
         await client.memory.update_session(
             session_id="sessionId",
-            metadata={},
+            metadata={"key": "value"},
         )
         """
         _response = await self._client_wrapper.httpx_client.request(
@@ -1913,9 +1937,9 @@ class AsyncMemoryClient:
         last_n: typing.Optional[int] = OMIT,
         persist: typing.Optional[bool] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
-    ) -> ClassifySessionResponse:
+    ) -> SessionClassification:
         """
-        classify a session by session id
+        classify a session by session id.
 
         Parameters
         ----------
@@ -1942,7 +1966,7 @@ class AsyncMemoryClient:
 
         Returns
         -------
-        ClassifySessionResponse
+        SessionClassification
             A response object containing the name and classification result.
 
         Examples
@@ -1966,7 +1990,7 @@ class AsyncMemoryClient:
             omit=OMIT,
         )
         if 200 <= _response.status_code < 300:
-            return pydantic_v1.parse_obj_as(ClassifySessionResponse, _response.json())  # type: ignore
+            return pydantic_v1.parse_obj_as(SessionClassification, _response.json())  # type: ignore
         if _response.status_code == 404:
             raise NotFoundError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
         if _response.status_code == 500:
@@ -1988,7 +2012,7 @@ class AsyncMemoryClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> EndSessionResponse:
         """
-        End a session by ID
+        End a session by ID.
 
         Parameters
         ----------
@@ -2137,7 +2161,7 @@ class AsyncMemoryClient:
             Session ID
 
         min_rating : typing.Optional[float]
-            Minimum rating by which to filter facts
+            Minimum rating by which to filter facts (Zep Cloud only)
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -2182,7 +2206,7 @@ class AsyncMemoryClient:
         self,
         session_id: str,
         *,
-        facts: typing.Optional[typing.Sequence[AddedFact]] = OMIT,
+        facts: typing.Optional[typing.Sequence[NewFact]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> SuccessResponse:
         """
@@ -2193,7 +2217,7 @@ class AsyncMemoryClient:
         session_id : str
             Session ID
 
-        facts : typing.Optional[typing.Sequence[AddedFact]]
+        facts : typing.Optional[typing.Sequence[NewFact]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -2239,21 +2263,17 @@ class AsyncMemoryClient:
         self,
         session_id: str,
         *,
-        memory_type: typing.Optional[MemoryType] = None,
         lastn: typing.Optional[int] = None,
         min_rating: typing.Optional[float] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Memory:
         """
-        Returns a memory (latest summary, list of messages and facts for models.MemoryTypePerpetual) for a given session
+        Returns a memory (latest summary, list of messages and facts) for a given session
 
         Parameters
         ----------
         session_id : str
             The ID of the session for which to retrieve memory.
-
-        memory_type : typing.Optional[MemoryType]
-            The type of memory to retrieve: perpetual, summary_retriever, or message_window. Defaults to perpetual.
 
         lastn : typing.Optional[int]
             The number of most recent memory entries to retrieve.
@@ -2283,7 +2303,7 @@ class AsyncMemoryClient:
         _response = await self._client_wrapper.httpx_client.request(
             f"sessions/{jsonable_encoder(session_id)}/memory",
             method="GET",
-            params={"memoryType": memory_type, "lastn": lastn, "minRating": min_rating},
+            params={"lastn": lastn, "minRating": min_rating},
             request_options=request_options,
         )
         if 200 <= _response.status_code < 300:
@@ -2321,10 +2341,10 @@ class AsyncMemoryClient:
             A list of message objects, where each message contains a role and content.
 
         fact_instruction : typing.Optional[str]
-            Additional instruction for generating the facts.
+            Additional instruction for generating the facts. Zep Cloud Only, will be ignored on Community Edition.
 
         summary_instruction : typing.Optional[str]
-            Additional instruction for generating the summary.
+            Additional instruction for generating the summary. Zep Cloud Only, will be ignored on Community Edition.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -2344,7 +2364,12 @@ class AsyncMemoryClient:
         )
         await client.memory.add(
             session_id="sessionId",
-            messages=[Message()],
+            messages=[
+                Message(
+                    content="content",
+                    role_type="norole",
+                )
+            ],
         )
         """
         _response = await self._client_wrapper.httpx_client.request(
@@ -2571,7 +2596,7 @@ class AsyncMemoryClient:
         await client.memory.update_message_metadata(
             session_id="sessionId",
             message_uuid="messageUUID",
-            metadata={},
+            metadata={"key": "value"},
         )
         """
         _response = await self._client_wrapper.httpx_client.request(
@@ -2610,7 +2635,7 @@ class AsyncMemoryClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> typing.List[MemorySearchResult]:
         """
-        Search memory for the specified session.
+        Search memory for the specified session. Deprecated, please use search_sessions method instead
 
         Parameters
         ----------

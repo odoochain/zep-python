@@ -5,24 +5,13 @@ import typing
 
 from ..core.datetime_utils import serialize_datetime
 from ..core.pydantic_utilities import deep_union_pydantic_dicts, pydantic_v1
+from .entity_edge import EntityEdge
+from .entity_node import EntityNode
 
 
-class Fact(pydantic_v1.BaseModel):
-    content: str
-    created_at: str
-    expired_at: typing.Optional[str] = None
-    fact: str = pydantic_v1.Field()
-    """
-    Deprecated. This field will be removed in the future, please use `content` instead.
-    """
-
-    invalid_at: typing.Optional[str] = None
-    name: typing.Optional[str] = None
-    rating: typing.Optional[float] = None
-    source_node_name: typing.Optional[str] = None
-    target_node_name: typing.Optional[str] = None
-    uuid_: str = pydantic_v1.Field(alias="uuid")
-    valid_at: typing.Optional[str] = None
+class GraphSearchResults(pydantic_v1.BaseModel):
+    edges: typing.Optional[typing.List[EntityEdge]] = None
+    nodes: typing.Optional[typing.List[EntityNode]] = None
 
     def json(self, **kwargs: typing.Any) -> str:
         kwargs_with_defaults: typing.Any = {"by_alias": True, "exclude_unset": True, **kwargs}
@@ -39,7 +28,5 @@ class Fact(pydantic_v1.BaseModel):
     class Config:
         frozen = True
         smart_union = True
-        allow_population_by_field_name = True
-        populate_by_name = True
         extra = pydantic_v1.Extra.allow
         json_encoders = {dt.datetime: serialize_datetime}

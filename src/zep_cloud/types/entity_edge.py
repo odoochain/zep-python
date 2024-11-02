@@ -7,22 +7,56 @@ from ..core.datetime_utils import serialize_datetime
 from ..core.pydantic_utilities import deep_union_pydantic_dicts, pydantic_v1
 
 
-class Fact(pydantic_v1.BaseModel):
-    content: str
-    created_at: str
-    expired_at: typing.Optional[str] = None
-    fact: str = pydantic_v1.Field()
+class EntityEdge(pydantic_v1.BaseModel):
+    created_at: str = pydantic_v1.Field()
     """
-    Deprecated. This field will be removed in the future, please use `content` instead.
+    Creation time of the edge
     """
 
-    invalid_at: typing.Optional[str] = None
-    name: typing.Optional[str] = None
-    rating: typing.Optional[float] = None
-    source_node_name: typing.Optional[str] = None
-    target_node_name: typing.Optional[str] = None
+    episodes: typing.Optional[typing.List[str]] = pydantic_v1.Field(default=None)
+    """
+    List of episode ids that reference these entity edges
+    """
+
+    expired_at: typing.Optional[str] = pydantic_v1.Field(default=None)
+    """
+    Datetime of when the node was invalidated
+    """
+
+    fact: str = pydantic_v1.Field()
+    """
+    Fact representing the edge and nodes that it connects
+    """
+
+    invalid_at: typing.Optional[str] = pydantic_v1.Field(default=None)
+    """
+    Datetime of when the fact stopped being true
+    """
+
+    name: str = pydantic_v1.Field()
+    """
+    Name of the edge, relation name
+    """
+
+    source_node_uuid: str = pydantic_v1.Field()
+    """
+    UUID of the source node
+    """
+
+    target_node_uuid: str = pydantic_v1.Field()
+    """
+    UUID of the target node
+    """
+
     uuid_: str = pydantic_v1.Field(alias="uuid")
-    valid_at: typing.Optional[str] = None
+    """
+    UUID of the edge
+    """
+
+    valid_at: typing.Optional[str] = pydantic_v1.Field(default=None)
+    """
+    Datetime of when the fact became true
+    """
 
     def json(self, **kwargs: typing.Any) -> str:
         kwargs_with_defaults: typing.Any = {"by_alias": True, "exclude_unset": True, **kwargs}

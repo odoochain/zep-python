@@ -7,15 +7,17 @@ from ..core.datetime_utils import serialize_datetime
 from ..core.pydantic_utilities import deep_union_pydantic_dicts, pydantic_v1
 
 
-class DocumentSearchResult(pydantic_v1.BaseModel):
-    content: typing.Optional[str] = None
+class Group(pydantic_v1.BaseModel):
     created_at: typing.Optional[str] = None
-    document_id: typing.Optional[str] = None
-    embedding: typing.Optional[typing.List[float]] = None
-    is_embedded: typing.Optional[bool] = None
-    metadata: typing.Optional[typing.Dict[str, typing.Any]] = None
-    score: typing.Optional[float] = None
-    updated_at: typing.Optional[str] = None
+    description: typing.Optional[str] = None
+    external_id: typing.Optional[str] = None
+    id: typing.Optional[int] = pydantic_v1.Field(default=None)
+    """
+    TODO deprecate
+    """
+
+    name: typing.Optional[str] = None
+    project_uuid: typing.Optional[str] = None
     uuid_: typing.Optional[str] = pydantic_v1.Field(alias="uuid", default=None)
 
     def json(self, **kwargs: typing.Any) -> str:

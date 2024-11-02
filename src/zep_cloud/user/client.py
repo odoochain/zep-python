@@ -12,6 +12,8 @@ from ..errors.bad_request_error import BadRequestError
 from ..errors.internal_server_error import InternalServerError
 from ..errors.not_found_error import NotFoundError
 from ..types.api_error import ApiError as types_api_error_ApiError
+from ..types.fact_rating_instruction import FactRatingInstruction
+from ..types.facts_response import FactsResponse
 from ..types.session import Session
 from ..types.success_response import SuccessResponse
 from ..types.user import User
@@ -29,6 +31,7 @@ class UserClient:
         self,
         *,
         email: typing.Optional[str] = OMIT,
+        fact_rating_instruction: typing.Optional[FactRatingInstruction] = OMIT,
         first_name: typing.Optional[str] = OMIT,
         last_name: typing.Optional[str] = OMIT,
         metadata: typing.Optional[typing.Dict[str, typing.Any]] = OMIT,
@@ -42,6 +45,9 @@ class UserClient:
         ----------
         email : typing.Optional[str]
             The email address of the user.
+
+        fact_rating_instruction : typing.Optional[FactRatingInstruction]
+            Optional instruction to use for fact rating.
 
         first_name : typing.Optional[str]
             The first name of the user.
@@ -77,6 +83,7 @@ class UserClient:
             method="POST",
             json={
                 "email": email,
+                "fact_rating_instruction": fact_rating_instruction,
                 "first_name": first_name,
                 "last_name": last_name,
                 "metadata": metadata,
@@ -249,6 +256,7 @@ class UserClient:
         user_id: str,
         *,
         email: typing.Optional[str] = OMIT,
+        fact_rating_instruction: typing.Optional[FactRatingInstruction] = OMIT,
         first_name: typing.Optional[str] = OMIT,
         last_name: typing.Optional[str] = OMIT,
         metadata: typing.Optional[typing.Dict[str, typing.Any]] = OMIT,
@@ -264,6 +272,9 @@ class UserClient:
 
         email : typing.Optional[str]
             The email address of the user.
+
+        fact_rating_instruction : typing.Optional[FactRatingInstruction]
+            Optional instruction to use for fact rating.
 
         first_name : typing.Optional[str]
             The first name of the user.
@@ -296,7 +307,13 @@ class UserClient:
         _response = self._client_wrapper.httpx_client.request(
             f"users/{jsonable_encoder(user_id)}",
             method="PATCH",
-            json={"email": email, "first_name": first_name, "last_name": last_name, "metadata": metadata},
+            json={
+                "email": email,
+                "fact_rating_instruction": fact_rating_instruction,
+                "first_name": first_name,
+                "last_name": last_name,
+                "metadata": metadata,
+            },
             request_options=request_options,
             omit=OMIT,
         )
@@ -304,6 +321,51 @@ class UserClient:
             return pydantic_v1.parse_obj_as(User, _response.json())  # type: ignore
         if _response.status_code == 400:
             raise BadRequestError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
+        if _response.status_code == 404:
+            raise NotFoundError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
+        if _response.status_code == 500:
+            raise InternalServerError(
+                pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json())  # type: ignore
+            )
+        try:
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise core_api_error_ApiError(status_code=_response.status_code, body=_response.text)
+        raise core_api_error_ApiError(status_code=_response.status_code, body=_response_json)
+
+    def get_facts(self, user_id: str, *, request_options: typing.Optional[RequestOptions] = None) -> FactsResponse:
+        """
+        Get user facts.
+
+        Parameters
+        ----------
+        user_id : str
+            The user_id of the user to get.
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        FactsResponse
+            The user facts.
+
+        Examples
+        --------
+        from zep_cloud.client import Zep
+
+        client = Zep(
+            api_key="YOUR_API_KEY",
+        )
+        client.user.get_facts(
+            user_id="userId",
+        )
+        """
+        _response = self._client_wrapper.httpx_client.request(
+            f"users/{jsonable_encoder(user_id)}/facts", method="GET", request_options=request_options
+        )
+        if 200 <= _response.status_code < 300:
+            return pydantic_v1.parse_obj_as(FactsResponse, _response.json())  # type: ignore
         if _response.status_code == 404:
             raise NotFoundError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
         if _response.status_code == 500:
@@ -370,6 +432,7 @@ class AsyncUserClient:
         self,
         *,
         email: typing.Optional[str] = OMIT,
+        fact_rating_instruction: typing.Optional[FactRatingInstruction] = OMIT,
         first_name: typing.Optional[str] = OMIT,
         last_name: typing.Optional[str] = OMIT,
         metadata: typing.Optional[typing.Dict[str, typing.Any]] = OMIT,
@@ -383,6 +446,9 @@ class AsyncUserClient:
         ----------
         email : typing.Optional[str]
             The email address of the user.
+
+        fact_rating_instruction : typing.Optional[FactRatingInstruction]
+            Optional instruction to use for fact rating.
 
         first_name : typing.Optional[str]
             The first name of the user.
@@ -418,6 +484,7 @@ class AsyncUserClient:
             method="POST",
             json={
                 "email": email,
+                "fact_rating_instruction": fact_rating_instruction,
                 "first_name": first_name,
                 "last_name": last_name,
                 "metadata": metadata,
@@ -590,6 +657,7 @@ class AsyncUserClient:
         user_id: str,
         *,
         email: typing.Optional[str] = OMIT,
+        fact_rating_instruction: typing.Optional[FactRatingInstruction] = OMIT,
         first_name: typing.Optional[str] = OMIT,
         last_name: typing.Optional[str] = OMIT,
         metadata: typing.Optional[typing.Dict[str, typing.Any]] = OMIT,
@@ -605,6 +673,9 @@ class AsyncUserClient:
 
         email : typing.Optional[str]
             The email address of the user.
+
+        fact_rating_instruction : typing.Optional[FactRatingInstruction]
+            Optional instruction to use for fact rating.
 
         first_name : typing.Optional[str]
             The first name of the user.
@@ -637,7 +708,13 @@ class AsyncUserClient:
         _response = await self._client_wrapper.httpx_client.request(
             f"users/{jsonable_encoder(user_id)}",
             method="PATCH",
-            json={"email": email, "first_name": first_name, "last_name": last_name, "metadata": metadata},
+            json={
+                "email": email,
+                "fact_rating_instruction": fact_rating_instruction,
+                "first_name": first_name,
+                "last_name": last_name,
+                "metadata": metadata,
+            },
             request_options=request_options,
             omit=OMIT,
         )
@@ -645,6 +722,53 @@ class AsyncUserClient:
             return pydantic_v1.parse_obj_as(User, _response.json())  # type: ignore
         if _response.status_code == 400:
             raise BadRequestError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
+        if _response.status_code == 404:
+            raise NotFoundError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
+        if _response.status_code == 500:
+            raise InternalServerError(
+                pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json())  # type: ignore
+            )
+        try:
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise core_api_error_ApiError(status_code=_response.status_code, body=_response.text)
+        raise core_api_error_ApiError(status_code=_response.status_code, body=_response_json)
+
+    async def get_facts(
+        self, user_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> FactsResponse:
+        """
+        Get user facts.
+
+        Parameters
+        ----------
+        user_id : str
+            The user_id of the user to get.
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        FactsResponse
+            The user facts.
+
+        Examples
+        --------
+        from zep_cloud.client import AsyncZep
+
+        client = AsyncZep(
+            api_key="YOUR_API_KEY",
+        )
+        await client.user.get_facts(
+            user_id="userId",
+        )
+        """
+        _response = await self._client_wrapper.httpx_client.request(
+            f"users/{jsonable_encoder(user_id)}/facts", method="GET", request_options=request_options
+        )
+        if 200 <= _response.status_code < 300:
+            return pydantic_v1.parse_obj_as(FactsResponse, _response.json())  # type: ignore
         if _response.status_code == 404:
             raise NotFoundError(pydantic_v1.parse_obj_as(types_api_error_ApiError, _response.json()))  # type: ignore
         if _response.status_code == 500:

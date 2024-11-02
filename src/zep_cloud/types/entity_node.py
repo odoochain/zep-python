@@ -7,22 +7,31 @@ from ..core.datetime_utils import serialize_datetime
 from ..core.pydantic_utilities import deep_union_pydantic_dicts, pydantic_v1
 
 
-class Fact(pydantic_v1.BaseModel):
-    content: str
-    created_at: str
-    expired_at: typing.Optional[str] = None
-    fact: str = pydantic_v1.Field()
+class EntityNode(pydantic_v1.BaseModel):
+    created_at: str = pydantic_v1.Field()
     """
-    Deprecated. This field will be removed in the future, please use `content` instead.
+    Creation time of the node
     """
 
-    invalid_at: typing.Optional[str] = None
-    name: typing.Optional[str] = None
-    rating: typing.Optional[float] = None
-    source_node_name: typing.Optional[str] = None
-    target_node_name: typing.Optional[str] = None
+    labels: typing.Optional[typing.List[str]] = pydantic_v1.Field(default=None)
+    """
+    Labels associated with the node
+    """
+
+    name: str = pydantic_v1.Field()
+    """
+    Name of the node
+    """
+
+    summary: str = pydantic_v1.Field()
+    """
+    Regional summary of surrounding edges
+    """
+
     uuid_: str = pydantic_v1.Field(alias="uuid")
-    valid_at: typing.Optional[str] = None
+    """
+    UUID of the node
+    """
 
     def json(self, **kwargs: typing.Any) -> str:
         kwargs_with_defaults: typing.Any = {"by_alias": True, "exclude_unset": True, **kwargs}

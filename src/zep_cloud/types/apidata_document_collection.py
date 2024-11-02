@@ -7,22 +7,20 @@ from ..core.datetime_utils import serialize_datetime
 from ..core.pydantic_utilities import deep_union_pydantic_dicts, pydantic_v1
 
 
-class Fact(pydantic_v1.BaseModel):
-    content: str
-    created_at: str
-    expired_at: typing.Optional[str] = None
-    fact: str = pydantic_v1.Field()
-    """
-    Deprecated. This field will be removed in the future, please use `content` instead.
-    """
-
-    invalid_at: typing.Optional[str] = None
+class ApidataDocumentCollection(pydantic_v1.BaseModel):
+    created_at: typing.Optional[str] = None
+    description: typing.Optional[str] = None
+    document_count: typing.Optional[int] = None
+    document_embedded_count: typing.Optional[int] = None
+    embedding_dimensions: typing.Optional[int] = None
+    embedding_model_name: typing.Optional[str] = None
+    is_auto_embedded: typing.Optional[bool] = None
+    is_indexed: typing.Optional[bool] = None
+    is_normalized: typing.Optional[bool] = None
+    metadata: typing.Optional[typing.Dict[str, typing.Any]] = None
     name: typing.Optional[str] = None
-    rating: typing.Optional[float] = None
-    source_node_name: typing.Optional[str] = None
-    target_node_name: typing.Optional[str] = None
-    uuid_: str = pydantic_v1.Field(alias="uuid")
-    valid_at: typing.Optional[str] = None
+    updated_at: typing.Optional[str] = None
+    uuid_: typing.Optional[str] = pydantic_v1.Field(alias="uuid", default=None)
 
     def json(self, **kwargs: typing.Any) -> str:
         kwargs_with_defaults: typing.Any = {"by_alias": True, "exclude_unset": True, **kwargs}

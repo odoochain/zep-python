@@ -5,24 +5,26 @@ import typing
 
 from ..core.datetime_utils import serialize_datetime
 from ..core.pydantic_utilities import deep_union_pydantic_dicts, pydantic_v1
+from .apidata_fact_rating_examples import ApidataFactRatingExamples
 
 
-class Fact(pydantic_v1.BaseModel):
-    content: str
-    created_at: str
-    expired_at: typing.Optional[str] = None
-    fact: str = pydantic_v1.Field()
+class ApidataFactRatingInstruction(pydantic_v1.BaseModel):
+    examples: typing.Optional[ApidataFactRatingExamples] = pydantic_v1.Field(default=None)
     """
-    Deprecated. This field will be removed in the future, please use `content` instead.
+    Examples is a list of examples that demonstrate how facts might be rated based on your instruction. You should provide
+    an example of a highly rated example, a low rated example, and a medium (or in between example). For example, if you are rating
+    based on relevance to a trip planning application, your examples might be:
+    High: "Joe's dream vacation is Bali"
+    Medium: "Joe has a fear of flying",
+    Low: "Joe's favorite food is Japanese",
     """
 
-    invalid_at: typing.Optional[str] = None
-    name: typing.Optional[str] = None
-    rating: typing.Optional[float] = None
-    source_node_name: typing.Optional[str] = None
-    target_node_name: typing.Optional[str] = None
-    uuid_: str = pydantic_v1.Field(alias="uuid")
-    valid_at: typing.Optional[str] = None
+    instruction: typing.Optional[str] = pydantic_v1.Field(default=None)
+    """
+    A string describing how to rate facts as they apply to your application. A trip planning application may
+    use something like "relevancy to planning a trip, the user's preferences when traveling,
+    or the user's travel history."
+    """
 
     def json(self, **kwargs: typing.Any) -> str:
         kwargs_with_defaults: typing.Any = {"by_alias": True, "exclude_unset": True, **kwargs}
@@ -39,7 +41,5 @@ class Fact(pydantic_v1.BaseModel):
     class Config:
         frozen = True
         smart_union = True
-        allow_population_by_field_name = True
-        populate_by_name = True
         extra = pydantic_v1.Extra.allow
         json_encoders = {dt.datetime: serialize_datetime}
